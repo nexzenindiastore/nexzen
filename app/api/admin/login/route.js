@@ -1,7 +1,5 @@
-// app/api/admin/login/route.js
-
 export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'  // ✅ NEW — fixes externalRequire errors
+export const runtime = 'nodejs'
 
 import { cookies } from 'next/headers'
 import {
@@ -78,7 +76,7 @@ export async function POST(request) {
       userAgent: request.headers.get('user-agent'),
     })
 
-    const cookieStore = await cookies()  // ✅ await added
+    const cookieStore = await cookies()
 
     cookieStore.set(getAdminCookieName(), session.token, {
       httpOnly: true,
@@ -91,12 +89,10 @@ export async function POST(request) {
     return Response.json({ ok: true })
   } catch (error) {
     console.error('ADMIN LOGIN ERROR:', error)
-
     const message =
       error instanceof Error
         ? error.message
         : 'Something went wrong during admin login.'
-
     return Response.json({ error: message }, { status: 500 })
   }
 }
