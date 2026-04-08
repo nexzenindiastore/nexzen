@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic' // 🔥 IMPORTANT (fixes Vercel build error)
+
 import { cookies } from 'next/headers'
 import {
   authenticateAdmin,
@@ -75,7 +77,7 @@ export async function POST(request) {
       userAgent: request.headers.get('user-agent'),
     })
 
-    // ✅ FIX: no await here
+    // ✅ Correct cookies usage (NO await)
     const cookieStore = cookies()
 
     cookieStore.set(getAdminCookieName(), session.token, {
@@ -88,6 +90,8 @@ export async function POST(request) {
 
     return Response.json({ ok: true })
   } catch (error) {
+    console.error('ADMIN LOGIN ERROR:', error)
+
     const message =
       error instanceof Error
         ? error.message
