@@ -5,3 +5,195 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum InventoryMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  RETURN
+}
+
+enum AuthProvider {
+  EMAIL
+  GITHUB
+  GOOGLE
+  FACEBOOK
+  LINKEDIN
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
+model Coupon {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  discountPercent Int
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("coupons")
+}
+
+model Product {
+  id                 String                @id @default(cuid())
+  sku                String?               @unique
+  name               String
+  slug               String                @unique
+  description        String?
+  shortDescription   String?
+  price              Decimal               @db.Decimal(10, 2)
+  compareAtPrice     Decimal?              @db.Decimal(10, 2)
+  costPrice          Decimal?              @db.Decimal(10, 2)
+  imageUrl           String?
+  barcode            String?               @unique
+  brand              String?
+  stockQuantity      Int                   @default(0)
+  reservedQuantity   Int                   @default(0)
+  lowStockThreshold  Int                   @default(5)
+  inStock            Boolean               @default(true)
+  status             ProductStatus         @default(ACTIVE)
+  weightGrams        Int?
+  requiresShipping   Boolean               @default(true)
+  trackInventory     Boolean               @default(true)
+  metadata           Json?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  categoryId         String
+  category           Category              @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems         OrderItem[]
+  inventoryMovements InventoryMovement[]
+  dependencies       ProductDependency[]   @relation("ProductDependencies")
+  requiredBy         ProductDependency[]   @relation("RequiredByProducts")
+}
+
+model ProductDependency {
+  id                  String   @id @default(cuid())
+  productId           String
+  dependencyProductId String
+  quantity            Int      @default(1)
+  isOptional          Boolean  @default(false)
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  product             Product  @relation("ProductDependencies", fields: [productId], references: [id], onDelete: Cascade)
+  dependencyProduct   Product  @relation("RequiredByProducts", fields: [dependencyProductId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, dependencyProductId])
+}
+
+model InventoryMovement {
+  id         String                @id @default(cuid())
+  productId  String
+  type       InventoryMovementType
+  quantity   Int
+  reason     String?
+  reference  String?
+  createdAt  DateTime              @default(now())
+  product    Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                String         @id @default(cuid())
+  authUserId        String?        @unique
+  email             String         @unique
+  name              String?
+  avatarUrl         String?
+  preferredProvider AuthProvider?
+  lastLoginAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  orders            Order[]
+  identities        UserIdentity[]
+  sessions          UserSession[]
+}
+
+model UserIdentity {
+  id             String       @id @default(cuid())
+  userId         String
+  provider       AuthProvider
+  providerUserId String
+  email          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@unique([provider, providerUserId])
+}
+
+model UserSession {
+  id               String       @id @default(cuid())
+  userId           String
+  provider         AuthProvider
+  sessionTokenHash String       @unique
+  expiresAt        DateTime?
+  lastSeenAt       DateTime     @default(now())
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Admin {
+  id        String         @id @default(cuid())
+  username  String         @unique
+  password  String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  sessions  AdminSession[]
+
+  @@map("admins")
+}
+
+model AdminSession {
+  id         String   @id @default(cuid())
+  adminId     String
+  tokenHash   String   @unique
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+  @@map("admin_sessions")
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  userId     String
+  status     String      @default("pending")
+  total      Decimal     @db.Decimal(10, 2)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items      OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int      @default(1)
+  price     Decimal  @db.Decimal(10, 2)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+}

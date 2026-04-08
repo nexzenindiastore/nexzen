@@ -1,6 +1,7 @@
 import './globals.css'
 import Footer from '@/components/Footer'
 import Navbar from '@/components/Navbar'
+import { AuthProvider } from '@/context/AuthContext'
 import { CartProvider } from '@/context/CartContext'
 
 export const metadata = {
@@ -12,14 +13,16 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
-        <CartProvider>
-          <div className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe_0%,#f8fafc_25%,#f8fafc_100%)]">
-            <Navbar />
-            <main>{children}</main>
-            <Footer />
-          </div>
-        </CartProvider>
+      <body suppressHydrationWarning>
+        <AuthProvider>
+          <CartProvider>
+            <div className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe_0%,#f8fafc_25%,#f8fafc_100%)]">
+              <Navbar />
+              <main>{children}</main>
+              <Footer />
+            </div>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   )

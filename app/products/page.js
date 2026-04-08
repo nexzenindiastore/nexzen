@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import ProductCard from '@/components/ProductCard'
-import { categories, products } from '@/data/products'
+import { getAllCategories, getAllProducts } from '@/lib/products'
 
 function sortProducts(items, sort) {
   switch (sort) {
@@ -11,7 +11,7 @@ function sortProducts(items, sort) {
     case 'rating':
       return [...items].sort((a, b) => b.rating - a.rating)
     case 'newest':
-      return [...items].reverse()
+      return [...items]
     default:
       return items
   }
@@ -19,6 +19,11 @@ function sortProducts(items, sort) {
 
 export default async function ProductsPage({ searchParams }) {
   const params = await searchParams
+  const [categories, products] = await Promise.all([
+    getAllCategories(),
+    getAllProducts(),
+  ])
+
   const category = params.category
   const query = params.query?.toLowerCase()
   const sort = params.sort
@@ -45,8 +50,8 @@ export default async function ProductsPage({ searchParams }) {
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
             {query
-              ? `Showing matches for "${params.query}" with a polished product grid and clearer merchandising.`
-              : 'A starter catalog for your Nexzen clone, with categories, pricing, ratings, and product detail pages ready to expand.'}
+              ? `Showing matches for "${params.query}" with live catalog data from Supabase.`
+              : 'Your storefront is now reading products from the real database instead of the static starter file.'}
           </p>
         </div>
 

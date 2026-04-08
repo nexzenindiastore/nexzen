@@ -16,6 +16,7 @@ const CartContext = createContext()
 // shares cart data with every child component
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([])
+  const [appliedCoupon, setAppliedCoupon] = useState(null)
 
   // Add item to cart (or increase quantity if already exists)
   function addToCart(product) {
@@ -55,6 +56,15 @@ export function CartProvider({ children }) {
   // Clear entire cart
   function clearCart() {
     setCartItems([])
+    setAppliedCoupon(null)
+  }
+
+  function applyCoupon(coupon) {
+    setAppliedCoupon(coupon)
+  }
+
+  function removeCoupon() {
+    setAppliedCoupon(null)
   }
 
   // Total number of items in cart (sum of all quantities)
@@ -65,6 +75,10 @@ export function CartProvider({ children }) {
     (sum, item) => sum + item.price * item.quantity,
     0
   )
+  const discountAmount = appliedCoupon
+    ? Math.round(cartTotal * (appliedCoupon.discountPercent / 100))
+    : 0
+  const finalTotal = Math.max(0, cartTotal - discountAmount)
 
   return (
     <CartContext.Provider
@@ -74,8 +88,13 @@ export function CartProvider({ children }) {
         removeFromCart,
         updateQuantity,
         clearCart,
+        applyCoupon,
+        removeCoupon,
+        appliedCoupon,
         cartCount,
         cartTotal,
+        discountAmount,
+        finalTotal,
       }}
     >
       {children}

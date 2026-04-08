@@ -70,6 +70,7 @@ export default function HeroBanner() {
           {heroSlides.map((item, index) => (
             <button
               key={item.id}
+              suppressHydrationWarning
               type="button"
               onClick={() => setCurrent(index)}
               className={`interactive-button h-2.5 rounded-full transition-all ${index === current ? 'w-10 bg-white' : 'w-2.5 bg-white/40'}`}

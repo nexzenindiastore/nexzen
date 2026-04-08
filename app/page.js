@@ -2,11 +2,13 @@ import Link from 'next/link'
 import CategoryGrid from '@/components/CategoryGrid'
 import HeroBanner from '@/components/HeroBanner'
 import ProductCard from '@/components/ProductCard'
-import { collections, highlights, products } from '@/data/products'
+import { collections, highlights } from '@/data/products'
+import { getAllProducts } from '@/lib/products'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await getAllProducts()
   const featuredProducts = products.slice(0, 4)
-  const trendingProducts = products.slice(4, 8)
+  const trendingProducts = [...products].sort((a, b) => b.rating - a.rating).slice(0, 4)
 
   return (
     <div className="pb-8">
