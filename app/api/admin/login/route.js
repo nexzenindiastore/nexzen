@@ -1,4 +1,7 @@
-export const dynamic = 'force-dynamic' // 🔥 IMPORTANT (fixes Vercel build error)
+// app/api/admin/login/route.js
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'  // ✅ NEW — fixes externalRequire errors
 
 import { cookies } from 'next/headers'
 import {
@@ -20,7 +23,6 @@ import {
 
 export async function POST(request) {
   try {
-    // ✅ Safe IP handling
     const ip = request?.headers
       ? getClientIpFromHeaders(request.headers)
       : 'unknown'
@@ -43,7 +45,6 @@ export async function POST(request) {
 
     recordLoginAttempt(rateKey)
 
-    // ✅ Safe JSON parsing
     let body = {}
     try {
       body = await request.json()
@@ -77,8 +78,7 @@ export async function POST(request) {
       userAgent: request.headers.get('user-agent'),
     })
 
-    // ✅ Correct cookies usage (NO await)
-    const cookieStore = cookies()
+    const cookieStore = await cookies()  // ✅ await added
 
     cookieStore.set(getAdminCookieName(), session.token, {
       httpOnly: true,
