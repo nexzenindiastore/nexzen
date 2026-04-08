@@ -18,7 +18,11 @@ import {
 
 export async function POST(request) {
   try {
-    const ip = getClientIpFromHeaders(request.headers)
+    // ✅ Safe IP handling
+    const ip = request?.headers
+      ? getClientIpFromHeaders(request.headers)
+      : 'unknown'
+
     const allowedIps = getAllowedAdminIps()
 
     if (!isIpAllowed(ip, allowedIps)) {
@@ -37,12 +41,20 @@ export async function POST(request) {
 
     recordLoginAttempt(rateKey)
 
-    const body = await request.json()
+    // ✅ Safe JSON parsing
+    let body = {}
+    try {
+      body = await request.json()
+    } catch {}
+
     const username = `${body?.username || ''}`.trim()
-    const password = `${body?.password || ''}`
+    const password = `${body?.password || ''}`.trim()
 
     if (!username || !password) {
-      return Response.json({ error: 'Username and password are required.' }, { status: 400 })
+      return Response.json(
+        { error: 'Username and password are required.' },
+        { status: 400 }
+      )
     }
 
     const admin = await authenticateAdmin(username, password)
@@ -50,16 +62,22 @@ export async function POST(request) {
     if (!admin) {
       const delay = recordFailedLogin(rateKey)
       await wait(delay)
-      return Response.json({ error: 'Invalid admin credentials.' }, { status: 401 })
+      return Response.json(
+        { error: 'Invalid admin credentials.' },
+        { status: 401 }
+      )
     }
 
     clearFailedLogins(rateKey)
+
     const session = await createAdminSession(admin.id, {
       ipAddress: ip,
       userAgent: request.headers.get('user-agent'),
     })
 
-    const cookieStore = await cookies()
+    // ✅ FIX: no await here
+    const cookieStore = cookies()
+
     cookieStore.set(getAdminCookieName(), session.token, {
       httpOnly: true,
       sameSite: 'lax',
@@ -71,7 +89,9 @@ export async function POST(request) {
     return Response.json({ ok: true })
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Something went wrong during admin login.'
+      error instanceof Error
+        ? error.message
+        : 'Something went wrong during admin login.'
 
     return Response.json({ error: message }, { status: 500 })
   }
