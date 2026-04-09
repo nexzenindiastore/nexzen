@@ -23,7 +23,9 @@ async function syncSession(session) {
   })
 }
 
-export default function AuthCallbackPage() {
+import { Suspense } from 'react'
+
+function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [message, setMessage] = useState('Completing your login...')
@@ -120,5 +122,21 @@ export default function AuthCallbackPage() {
         )}
       </div>
     </section>
+  )
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <section className="px-4 py-20 sm:px-6 lg:px-8 bg-slate-50 min-h-screen">
+        <div className="mx-auto max-w-2xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+           <p className="text-sm uppercase tracking-[0.24em] text-blue-700">Auth Callback</p>
+           <h1 className="mt-4 font-heading text-3xl font-semibold text-slate-950 border-none bg-transparent">Finishing your sign-in</h1>
+           <p className="mt-4 text-sm leading-6 text-slate-600">Loading...</p>
+        </div>
+      </section>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   )
 }

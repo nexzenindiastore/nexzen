@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/auth/supabase-browser'
 
-export default function SetPasswordPage() {
+import { Suspense } from 'react'
+
+function SetPasswordContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [password, setPassword] = useState('')
@@ -138,5 +140,19 @@ export default function SetPasswordPage() {
         </div>
       </div>
     </section>
+  )
+}
+
+export default function SetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <section className="px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+           <p className="mt-4 text-sm leading-6 text-slate-600">Loading...</p>
+        </div>
+      </section>
+    }>
+      <SetPasswordContent />
+    </Suspense>
   )
 }
