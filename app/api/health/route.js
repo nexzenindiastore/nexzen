@@ -1,10 +1,5 @@
-import { prisma } from '@/lib/prisma'
+import { handleHealthCheck } from './health-route'
 
 export async function GET() {
-  const productCount = await prisma.product.count()
-
-  return Response.json({
-    ok: true,
-    productCount,
-  })
+  return handleHealthCheck()
 }

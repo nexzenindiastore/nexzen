@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { createSupabaseBrowserClient } from '@/lib/auth/supabase-browser'
 
 async function syncSession(session) {
   if (!session?.access_token) {
@@ -73,7 +73,18 @@ export default function AuthCallbackPage() {
 
         await syncSession(session)
 
+        const metadata = session.user?.user_metadata || {}
+        const provider = `${session.user?.app_metadata?.provider || ''}`.toLowerCase()
+        const hasProfileName = Boolean(
+          `${metadata.full_name || metadata.name || metadata.user_name || ''}`.trim()
+        )
+
         if (mounted) {
+          if ((provider === 'google' || provider === 'github' || provider === 'facebook' || provider === 'linkedin_oidc') && !hasProfileName) {
+            router.replace(`/complete-profile?next=${encodeURIComponent(next)}`)
+            return
+          }
+
           router.replace(next)
         }
       } catch (error) {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getAdminBasePath, getAllowedAdminIps } from '@/lib/admin-config'
-import { getClientIpFromHeaders, isIpAllowed } from '@/lib/admin-security'
+import { getAdminBasePath, getAllowedAdminIps } from '@/lib/admin/config'
+import { getClientIpFromHeaders, isIpAllowed } from '@/lib/admin/security'
 
 export function proxy(request) {
   const { pathname } = request.nextUrl

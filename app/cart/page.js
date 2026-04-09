@@ -2,9 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { useCart } from '@/context/CartContext'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/providers/AuthProvider'
+import { useCart } from '@/providers/CartProvider'
 
 export default function CartPage() {
+  const router = useRouter()
+  const { user, session } = useAuth()
   const {
     cartItems,
     cartTotal,
@@ -21,6 +25,9 @@ export default function CartPage() {
   const [couponMessage, setCouponMessage] = useState('')
   const [couponError, setCouponError] = useState('')
   const [isApplyingCoupon, startCouponTransition] = useTransition()
+  const [checkoutMessage, setCheckoutMessage] = useState('')
+  const [checkoutError, setCheckoutError] = useState('')
+  const [isCheckingOut, startCheckoutTransition] = useTransition()
 
   function handleApplyCoupon() {
     const code = couponCode.trim()
@@ -55,6 +62,53 @@ export default function CartPage() {
       setCouponCode(result.coupon.name)
       setCouponMessage(`${result.coupon.name} applied for ${result.coupon.discountPercent}% off.`)
       setCouponError('')
+    })
+  }
+
+  function handleCheckout() {
+    if (!user || !session?.access_token) {
+      setCheckoutError('Sign in first to place an order and save it to your account.')
+      setCheckoutMessage('')
+      router.push('/login')
+      return
+    }
+
+    setCheckoutError('')
+    setCheckoutMessage('')
+
+    startCheckoutTransition(async () => {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          items: cartItems.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total: finalTotal,
+        }),
+      })
+
+      const result = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setCheckoutError(result.error || 'Could not place your order.')
+        setCheckoutMessage('')
+        return
+      }
+
+      clearCart()
+      setCouponCode('')
+      setCouponMessage('')
+      setCouponError('')
+      setCheckoutError('')
+      setCheckoutMessage(`Order ${result.order.displayId || result.order.id} has been placed and saved to your profile.`)
+      router.push('/active-orders')
+      router.refresh()
     })
   }
 
@@ -176,7 +230,7 @@ export default function CartPage() {
               </div>
 
               <p className="mt-4 text-sm leading-7 text-slate-400">
-                Checkout is not wired yet, but this layout is ready for payment, address, and shipping integration later.
+                Orders are now saved to the signed-in customer account. Payment and address collection can be added later on top of this flow.
               </p>
               {discountAmount > 0 && (
                 <div className="mt-6 flex items-end justify-between">
@@ -188,9 +242,16 @@ export default function CartPage() {
                 <span className="text-slate-300">Total</span>
                 <span className="font-heading text-3xl font-semibold">Rs. {finalTotal.toLocaleString()}</span>
               </div>
+              {checkoutMessage && <p className="mt-4 text-sm text-emerald-300">{checkoutMessage}</p>}
+              {checkoutError && <p className="mt-4 text-sm text-rose-300">{checkoutError}</p>}
               <div className="mt-8 flex flex-col gap-3">
-                <button suppressHydrationWarning type="button" className="interactive-button rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-slate-200 hover:shadow-[0_16px_36px_rgba(255,255,255,0.16)]">
-                  Proceed to checkout
+                <button
+                  suppressHydrationWarning
+                  type="button"
+                  onClick={handleCheckout}
+                  className="interactive-button rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-slate-200 hover:shadow-[0_16px_36px_rgba(255,255,255,0.16)]"
+                >
+                  {isCheckingOut ? 'Placing order...' : 'Place order'}
                 </button>
                 <button
                   suppressHydrationWarning

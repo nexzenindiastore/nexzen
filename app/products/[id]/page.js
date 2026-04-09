@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import ProductCard from '@/components/ProductCard'
-import ProductActions from '@/components/ProductActions'
-import { getAllProducts, getProductBySlug } from '@/lib/products'
+import ProductCard from '@/components/storefront/ProductCard'
+import ProductActions from '@/components/storefront/ProductActions'
+import { getAllProducts, getProductBySlug } from '@/lib/catalog/products'
 
 export async function generateMetadata({ params }) {
   const { id } = await params

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getAdminBasePath } from '@/lib/admin-config'
+import { getAdminBasePath } from '@/lib/admin/config'
 
 export const metadata = {
   title: 'Admin Products | Nexzen',

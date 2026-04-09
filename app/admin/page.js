@@ -1,10 +1,10 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AdminLanding from '@/components/admin/AdminLanding'
-import { getAdminCookieName, getAdminSession } from '@/lib/admin-auth'
-import { getAdminBasePath } from '@/lib/admin-config'
-import { getAllCategories } from '@/lib/products'
-import { prisma } from '@/lib/prisma'
+import { getAdminCookieName, getAdminSession } from '@/lib/admin/auth'
+import { getAdminBasePath } from '@/lib/admin/config'
+import { getAllCategories } from '@/lib/catalog/products'
+import { prisma } from '@/lib/database/prisma'
 
 export const metadata = {
   title: 'Admin Dashboard | Nexzen',

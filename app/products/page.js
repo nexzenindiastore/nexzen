@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import ProductCard from '@/components/ProductCard'
-import { getAllCategories, getAllProducts } from '@/lib/products'
+import ProductCard from '@/components/storefront/ProductCard'
+import { getAllCategories, getAllProducts } from '@/lib/catalog/products'
 
 function sortProducts(items, sort) {
   switch (sort) {

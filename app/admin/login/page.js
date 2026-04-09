@@ -1,5 +1,5 @@
 import AdminLoginForm from '@/components/admin/AdminLoginForm'
-import { getAdminBasePath } from '@/lib/admin-config'
+import { getAdminBasePath } from '@/lib/admin/config'
 
 export const metadata = {
   title: 'Admin Login | Nexzen',

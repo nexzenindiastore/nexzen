@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { createSupabaseBrowserClient } from '@/lib/auth/supabase-browser'
 
 const providerButtons = [
   {
@@ -43,6 +43,44 @@ function getProviderSetupMessage(providerName) {
   return `${providerName} login is disabled in Supabase right now. Enable the ${providerName} provider in Supabase Authentication > Providers and add ${authCallbackUrl} as an allowed redirect URL.`
 }
 
+function PasswordField({
+  name,
+  value,
+  onChange,
+  placeholder,
+  required = false,
+  minLength,
+  label,
+  visible,
+  onToggle,
+}) {
+  return (
+    <label className="grid gap-2 text-sm text-slate-700">
+      {label}
+      <div className="relative">
+        <input
+          suppressHydrationWarning
+          type={visible ? 'text' : 'password'}
+          name={name}
+          value={value}
+          required={required}
+          minLength={minLength}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full rounded-2xl border border-slate-200 px-4 py-3 pr-20 outline-none transition focus:border-blue-500"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:text-slate-950"
+        >
+          {visible ? 'Hide' : 'Show'}
+        </button>
+      </div>
+    </label>
+  )
+}
+
 async function syncSession(session) {
   if (!session?.access_token) {
     return
@@ -73,6 +111,19 @@ export default function UserLoginForm() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+
+  const isReset = mode === 'reset'
+  const isSignup = mode === 'signup'
+
+  function resetState(nextMode) {
+    setMode(nextMode)
+    setPassword('')
+    setShowPassword(false)
+    setError('')
+    setMessage('')
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -81,49 +132,37 @@ export default function UserLoginForm() {
     setMessage('')
 
     const formData = new FormData(event.currentTarget)
-    const fullName = `${formData.get('fullName') || ''}`.trim()
     const email = `${formData.get('email') || ''}`.trim()
-    const password = `${formData.get('password') || ''}`
     const supabase = createSupabaseBrowserClient()
 
     try {
       if (mode === 'reset') {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: `${window.location.origin}/update-password`,
         })
 
         if (resetError) {
           throw resetError
         }
 
-        setMessage('Password reset email sent. Check your inbox to continue.')
+        router.push(`/verify-email?type=recovery&email=${encodeURIComponent(email)}`)
         return
       }
 
       if (mode === 'signup') {
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { error: otpError } = await supabase.auth.signInWithOtp({
           email,
-          password,
           options: {
-            data: {
-              full_name: fullName,
-            },
+            shouldCreateUser: true,
+            emailRedirectTo: `${window.location.origin}/verify-email?type=signup&email=${encodeURIComponent(email)}`,
           },
         })
 
-        if (signUpError) {
-          throw signUpError
+        if (otpError) {
+          throw otpError
         }
 
-        if (data.session) {
-          await syncSession(data.session)
-          router.replace('/')
-          router.refresh()
-          return
-        }
-
-        setMessage('Account created. Check your email to confirm your address before signing in.')
-        setMode('signin')
+        router.push(`/verify-email?type=signup&email=${encodeURIComponent(email)}`)
         return
       }
 
@@ -182,25 +221,9 @@ export default function UserLoginForm() {
     }
   }
 
-  const isReset = mode === 'reset'
-  const isSignup = mode === 'signup'
-
   return (
     <>
       <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-        {isSignup && (
-          <label className="grid gap-2 text-sm text-slate-700">
-            Full name
-            <input
-              suppressHydrationWarning
-              type="text"
-              name="fullName"
-              placeholder="Your name"
-              className="rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
-            />
-          </label>
-        )}
-
         <label className="grid gap-2 text-sm text-slate-700">
           Email
           <input
@@ -213,30 +236,31 @@ export default function UserLoginForm() {
           />
         </label>
 
-        {!isReset && (
-          <label className="grid gap-2 text-sm text-slate-700">
-            Password
-            <input
-              suppressHydrationWarning
-              type="password"
-              name="password"
-              required
-              minLength={6}
-              placeholder="Enter password"
-              className="rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
-            />
-          </label>
+        {!isReset && !isSignup && (
+          <PasswordField
+            name="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            minLength={6}
+            placeholder="Enter password"
+            label="Password"
+            visible={showPassword}
+            onToggle={() => setShowPassword((current) => !current)}
+          />
+        )}
+
+        {isSignup && (
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-600">
+            We will send a one-time code to this email first. After you verify the OTP, Nexzen will ask you to set your password and then your profile name.
+          </div>
         )}
 
         <div className="flex items-center justify-between gap-3 pt-1 text-sm">
           <button
             suppressHydrationWarning
             type="button"
-            onClick={() => {
-              setMode(isReset ? 'signin' : 'reset')
-              setError('')
-              setMessage('')
-            }}
+            onClick={() => resetState(isReset ? 'signin' : 'reset')}
             className="text-rose-600 transition hover:text-rose-700"
           >
             {isReset ? 'Back to sign in' : 'Forgot your password?'}
@@ -245,11 +269,7 @@ export default function UserLoginForm() {
           <button
             suppressHydrationWarning
             type="button"
-            onClick={() => {
-              setMode(isSignup ? 'signin' : 'signup')
-              setError('')
-              setMessage('')
-            }}
+            onClick={() => resetState(isSignup ? 'signin' : 'signup')}
             className="text-slate-600 transition hover:text-slate-950"
           >
             {isSignup ? 'Have an account?' : 'Create account'}
@@ -277,9 +297,9 @@ export default function UserLoginForm() {
           {loading
             ? 'Please wait...'
             : isReset
-              ? 'Send reset link'
+              ? 'Send reset OTP'
               : isSignup
-                ? 'Create account'
+                ? 'Send OTP'
                 : 'Sign in'}
         </button>
       </form>
@@ -314,6 +334,14 @@ export default function UserLoginForm() {
         <br />
         <span className="font-medium text-slate-700">{authCallbackPath}</span>
       </p>
+
+      <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-600">
+        {isReset
+          ? 'We will send a password reset email to your inbox. If your email template is set to OTP mode in Supabase, enter that code on the next screen. If it is set to link mode, use the link from your inbox and then choose a new password.'
+          : isSignup
+            ? 'Nexzen signup is now email-first: email, OTP, password, then your name. For real OTP inbox delivery in production, configure custom SMTP in Supabase Auth.'
+            : 'Use your Nexzen email/password or a connected social provider to sign in and sync your account.'}
+      </div>
 
       <div className="mt-5 text-sm text-slate-500">
         <Link href="/" className="transition hover:text-slate-950">

@@ -1,8 +1,8 @@
 import './globals.css'
-import Footer from '@/components/Footer'
-import Navbar from '@/components/Navbar'
-import { AuthProvider } from '@/context/AuthContext'
-import { CartProvider } from '@/context/CartContext'
+import Footer from '@/components/storefront/Footer'
+import Navbar from '@/components/storefront/Navbar'
+import { AuthProvider } from '@/providers/AuthProvider'
+import { CartProvider } from '@/providers/CartProvider'
 
 export const metadata = {
   title: 'Nexzen | Modern Electronics Storefront',

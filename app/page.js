@@ -1,9 +1,9 @@
 import Link from 'next/link'
-import CategoryGrid from '@/components/CategoryGrid'
-import HeroBanner from '@/components/HeroBanner'
-import ProductCard from '@/components/ProductCard'
+import CategoryGrid from '@/components/storefront/CategoryGrid'
+import HeroBanner from '@/components/storefront/HeroBanner'
+import ProductCard from '@/components/storefront/ProductCard'
 import { collections, highlights } from '@/data/products'
-import { getAllProducts } from '@/lib/products'
+import { getAllProducts } from '@/lib/catalog/products'
 
 export default async function HomePage() {
   const products = await getAllProducts()
