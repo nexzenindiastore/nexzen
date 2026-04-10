@@ -46,6 +46,12 @@ export function AuthProvider({ children }) {
     const supabase = createSupabaseBrowserClient()
 
     async function bootstrap() {
+      // Fix: If Supabase drops the redirect path and lands on root with an access token, manually route it.
+      if (typeof window !== 'undefined' && window.location.hash.includes('access_token=') && window.location.pathname !== '/auth/callback') {
+        window.location.href = `/auth/callback${window.location.hash}`
+        return
+      }
+
       try {
         const {
           data: { session: currentSession },
